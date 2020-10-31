@@ -73,20 +73,33 @@ class ReflexAgent(Agent):
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
-        # Finding distance to farthest food pellet.
-        pellets = newFood.asList()
+        # Our pre-determined weights
+        FOOD_WEIGHT = 0.8
+        GHOST_WEIGHT = 0.5
+        SCARED_WEIGHT = 0.15
 
-        max_distance = -1
-        for pellet in pellets:
-            current_distance = util.manhattanDistance(newPos, pellet)
-            if current_distance >= max_distance:
-                max_distance = current_distance
+        # The closest pellet to Pacman.
+        closest_pellet = 1
+        if newFood.asList():
+            # Good lord Python's syntax is so slick :)
+            closest_pellet = min(util.manhattanDistance(newPos, pellet) for pellet in newFood.asList())
 
-        "*** YOUR CODE HERE ***"
+        # Distance from pacman to gHoStS
+        ghost_distances = 1
+        for ghost in newGhostStates:
+            ghost_distances += util.manhattanDistance(newPos, ghost.getPosition())
 
-        #                                                          Distance from PacMan to Ghost.
-        return successorGameState.getScore() - max_distance + util.manhattanDistance(newPos,
-                                                                                     newGhostStates[0].getPosition())
+        # Amount of time left with ghosts being scared.
+        scared_time = 1
+        for scared in newScaredTimes:
+            scared_time += scared
+
+        # Adjusted values with weights. Negative means we want pacman to avoid states with large numbers here.
+        FOOD_ADJ = (FOOD_WEIGHT / float(closest_pellet))
+        GHOSTS_ADJ = (GHOST_WEIGHT / float(ghost_distances)) * -1
+        SCARED_ADJ = (SCARED_WEIGHT / float(scared_time))
+
+        return successorGameState.getScore() + FOOD_ADJ + GHOSTS_ADJ + SCARED_ADJ
 
 
 def scoreEvaluationFunction(currentGameState):
