@@ -163,7 +163,51 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        def minimax(currentGameState, agent_number, depth):
+            # We've hit the bottom of the specified depth.
+            if depth == self.depth or currentGameState.isLose() or currentGameState.isWin():
+                return self.evaluationFunction(currentGameState)
+
+            # Pacman
+            if agent_number == 0:
+                lst = []
+                for possible_move in currentGameState.getLegalActions(agent_number):
+                    val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), 1, depth)
+                    lst.append(val)
+
+                # We're pacman, so we're positive.
+                return max(lst)
+            # Ghosts
+            else:
+                # Cycling through ghosts.
+                next_agent = agent_number + 1
+                if next_agent == gameState.getNumAgents():
+                    next_agent = 0
+
+                # Gotta love me some ternary operators :)
+                depth += 1 if next_agent == 0 else 0
+
+                lst = []
+                for possible_move in currentGameState.getLegalActions(agent_number):
+                    val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), next_agent, depth)
+                    lst.append(val)
+
+                # Since the ghosts are our adversaries, they're negative.
+                return min(lst)
+
+        # Root node jump-start.
+        utility = -1
+        corresponding_move = None
+        for legalMove in gameState.getLegalActions(0):
+            val = minimax(gameState.generateSuccessor(0, legalMove), 1, 0)
+            # We've found a more desirable move.
+            if val > utility:
+                utility = val
+                corresponding_move = legalMove
+
+        # Always returns corresponding_move, but wanting to make sure there's a default in case something weird happens.
+        return Directions.NORTH if corresponding_move is None else corresponding_move
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
