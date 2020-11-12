@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -167,6 +167,113 @@ class MinimaxAgent(MultiAgentSearchAgent):
         def minimax(currentGameState, agent_number, depth):
             # We've hit the bottom of the specified depth.
             if depth == self.depth or currentGameState.isLose() or currentGameState.isWin():
+                return (self.evaluationFunction(currentGameState),Directions.STOP)
+
+            # Pacman
+            if agent_number == 0:
+                v = float('-inf')
+                move = Directions.STOP
+                for possible_move in currentGameState.getLegalActions(agent_number):
+                    val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), 1, depth)
+                    if v < val[0]:
+                        v = val[0]
+                        move = possible_move
+                # We're pacman, so we're positive.
+                return (v,move)
+            # Ghosts
+            else:
+                # Cycling through ghosts.
+                next_agent = agent_number + 1
+                if next_agent == gameState.getNumAgents():
+                    next_agent = 0
+
+                # Gotta love me some ternary operators :)
+                depth += 1 if next_agent == 0 else 0
+
+                v = float('inf')
+                for possible_move in currentGameState.getLegalActions(agent_number):
+                    val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), next_agent, depth)
+                    if v > val[0]:
+                        v = val[0]
+                # Since the ghosts are our adversaries, they're negative, stop is ignored.
+                return (v, Directions.STOP)
+
+        # returns the best found action for pacman to take.
+        return minimax(gameState, 0, 0)[1]
+
+class AlphaBetaAgent(MultiAgentSearchAgent):
+    """
+    Your minimax agent with alpha-beta pruning (question 3)
+    """
+
+    def getAction(self, gameState):
+        """
+        Returns the minimax action using self.depth and self.evaluationFunction
+        """
+        "*** YOUR CODE HERE ***"
+        def minimax(currentGameState, agent_number, depth,a,b):
+            # We've hit the bottom of the specified depth.
+            if depth == self.depth or currentGameState.isLose() or currentGameState.isWin():
+                return (self.evaluationFunction(currentGameState),Directions.STOP) #stop is a placefiller, not actually used
+
+            # Pacman
+            if agent_number == 0:
+                v = float('-inf')
+                move = Directions.STOP
+                for possible_move in currentGameState.getLegalActions(agent_number):
+                    val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), 1, depth,a,b)
+                    if v < val[0]:
+                        v = val[0]
+                        move = possible_move
+                    a = max(a,v)
+                    if a > b:
+                        return(v,move)
+                # We're pacman, so we're positive. returning the best move for pacman to choose from
+                return (v,move)
+            # Ghosts
+            else:
+                # Cycling through ghosts.
+                next_agent = agent_number + 1
+                if next_agent == gameState.getNumAgents():
+                    next_agent = 0
+
+                # Gotta love me some ternary operators :)
+                depth += 1 if next_agent == 0 else 0
+
+                v = float('inf')
+                for possible_move in currentGameState.getLegalActions(agent_number):
+                    val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), next_agent, depth,a,b)
+                    if v > val[0]:
+                        v = val[0]
+                    #used for pruning
+                    b = min(b,v)
+                    if a > b:
+                        return (v,Directions.STOP)
+                # Since the ghosts are our adversaries, they're negative, direction doesn't matter so using stop as a placefiller
+                return (v, Directions.STOP)
+
+
+        #gets the value and best action with pruning, so have to make a and b -infinity and infinity for min and max comparisons
+        val = minimax(gameState, 0, 0,float('-inf'),float('inf'))
+        return val[1]
+
+
+class ExpectimaxAgent(MultiAgentSearchAgent):
+    """
+      Your expectimax agent (question 4)
+    """
+
+    def getAction(self, gameState):
+        """
+        Returns the expectimax action using self.depth and self.evaluationFunction
+
+        All ghosts should be modeled as choosing uniformly at random from their
+        legal moves.
+        """
+        "*** YOUR CODE HERE ***"
+        def minimax(currentGameState, agent_number, depth):
+            # We've hit the bottom of the specified depth.
+            if depth == self.depth or currentGameState.isLose() or currentGameState.isWin():
                 return self.evaluationFunction(currentGameState)
 
             # Pacman
@@ -189,15 +296,17 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 depth += 1 if next_agent == 0 else 0
 
                 lst = []
+                sum = 0
                 for possible_move in currentGameState.getLegalActions(agent_number):
                     val = minimax(currentGameState.generateSuccessor(agent_number, possible_move), next_agent, depth)
                     lst.append(val)
+                    sum += val
 
-                # Since the ghosts are our adversaries, they're negative.
-                return min(lst)
+                # Since the ghosts are our adversaries but we're not sure they're the brightest needle in the heystack, we allow room for error.
+                return sum / len(lst)
 
         # Root node jump-start.
-        utility = -1
+        utility = float('-inf')
         corresponding_move = None
         for legalMove in gameState.getLegalActions(0):
             val = minimax(gameState.generateSuccessor(0, legalMove), 1, 0)
@@ -208,35 +317,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         # Always returns corresponding_move, but wanting to make sure there's a default in case something weird happens.
         return Directions.NORTH if corresponding_move is None else corresponding_move
-
-
-class AlphaBetaAgent(MultiAgentSearchAgent):
-    """
-    Your minimax agent with alpha-beta pruning (question 3)
-    """
-
-    def getAction(self, gameState):
-        """
-        Returns the minimax action using self.depth and self.evaluationFunction
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
-
-class ExpectimaxAgent(MultiAgentSearchAgent):
-    """
-      Your expectimax agent (question 4)
-    """
-
-    def getAction(self, gameState):
-        """
-        Returns the expectimax action using self.depth and self.evaluationFunction
-
-        All ghosts should be modeled as choosing uniformly at random from their
-        legal moves.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
 
 
 def betterEvaluationFunction(currentGameState):
